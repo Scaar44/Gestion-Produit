@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion de Produits</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .container { display: flex; flex-wrap: wrap; justify-content: space-between; }
+        .table-container { width: 48%; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th, td { border: 1px solid black; padding: 5px; text-align: left; font-size: 0.9em; }
+        input { width: 95%; padding: 2px; font-size: 0.9em; }
+        button { margin: 5px 0; padding: 5px; cursor: pointer; font-size: 0.9em; }
+        .title-input { width: 100%; font-size: 1em; margin-bottom: 5px; font-weight: bold; }
+        @media print {
+            body { max-width: none; padding: 0; }
+            .no-print { display: none; }
+            .table-container { width: 48%; margin-bottom: 10px; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <h1 class="no-print">Gestion de Produits</h1>
+    <button onclick="addTable()" class="no-print">Ajouter un nouveau tableau</button>
+    <button onclick="downloadPDF()" class="no-print">Télécharger en PDF</button>
+    <div id="tablesContainer" class="container">
+        <!-- Les tableaux seront ajoutés ici dynamiquement -->
+    </div>
+
+    <script>
+        let tableCount = 0;
+
+        function addTable() {
+            tableCount++;
+            const tableContainer = document.createElement('div');
+            tableContainer.className = 'table-container';
+            tableContainer.innerHTML = `
+                <input type="text" class="title-input" placeholder="Titre du tableau" id="title${tableCount}">
+                <table id="table${tableCount}">
+                    <thead>
+                        <tr>
+                            <th>Produit</th>
+                            <th>Qté</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les lignes seront ajoutées ici dynamiquement -->
+                    </tbody>
+                </table>
+                <button onclick="addRow('table${tableCount}')" class="no-print">Ajouter un produit</button>
+            `;
+            document.getElementById('tablesContainer').appendChild(tableContainer);
+            addRow(`table${tableCount}`);
+        }
+
+        function addRow(tableId) {
+            const table = document.getElementById(tableId);
+            const newRow = table.insertRow(-1);
+            const cell1 = newRow.insertCell(0);
+            const cell2 = newRow.insertCell(1);
+            
+            cell1.innerHTML = '<input type="text" placeholder="Nom">';
+            cell2.innerHTML = '<input type="number" placeholder="">';
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            html2canvas(document.body, { scale: 2 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const imgWidth = pageWidth;
+                const imgHeight = canvas.height * imgWidth / canvas.width;
+
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    doc.addPage();
+                    doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                doc.save('gestion_produits.pdf');
+            });
+        }
+
+        // Ajouter deux tableaux initiaux
+        addTable();
+        addTable();
+    </script>
+</body>
+</html>
